@@ -11,8 +11,8 @@ import ReactNativeModal from "react-native-modal";
 const SignUp = () => {
   const { signUp, setActive, isLoaded } = useSignUp();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   const router = useRouter();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -182,7 +182,10 @@ const SignUp = () => {
               </Text>
               <CustomButton
                 title="Browse Home"
-                onPress={() => router.replace("/(root)/(tabs)/home")}
+                onPress={() => {
+                  setShowSuccessModal(false);
+                  router.push("/(root)/(tabs)/home");
+                }}
                 className="mt-5"
               />
             </View>
