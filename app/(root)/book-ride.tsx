@@ -1,13 +1,12 @@
 import { useUser } from "@clerk/clerk-expo";
+import { StripeProvider } from "@stripe/stripe-react-native";
 import { Image, Text, View } from "react-native";
 
+import Payment from "@/components/Payment";
 import RideLayout from "@/components/RideLayout";
 import { icons } from "@/constants";
 import { formatTime } from "@/lib/utils";
 import { useDriverStore, useLocationStore } from "@/store";
-import Payment from "@/components/Payment";
-
-import { StripeProvider } from "@stripe/stripe-react-native";
 
 const BookRide = () => {
   const { user } = useUser();
@@ -21,7 +20,7 @@ const BookRide = () => {
   return (
     <StripeProvider
       publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
-      merchantIdentifier="merchant.ride-bd.com"
+      merchantIdentifier="merchant.com.uber"
       urlScheme="myapp"
     >
       <RideLayout title="Book Ride">
@@ -65,7 +64,7 @@ const BookRide = () => {
             <View className="flex flex-row items-center justify-between w-full border-b border-white py-3">
               <Text className="text-lg font-JakartaRegular">Pickup Time</Text>
               <Text className="text-lg font-JakartaRegular">
-                {formatTime(parseInt(`${driverDetails?.time!}`) || 5)}
+                {formatTime(parseInt(`${driverDetails?.time}`)!)}
               </Text>
             </View>
 
@@ -91,14 +90,15 @@ const BookRide = () => {
                 {destinationAddress}
               </Text>
             </View>
-            <Payment
-              fullName={user?.fullName!}
-              email={user?.emailAddresses[0].emailAddress!}
-              amount={driverDetails?.price}
-              driverId={driverDetails?.id}
-              rideTime={driverDetails?.time}
-            />
           </View>
+
+          <Payment
+            fullName={user?.fullName!}
+            email={user?.emailAddresses[0].emailAddress!}
+            amount={driverDetails?.price!}
+            driverId={driverDetails?.id}
+            rideTime={driverDetails?.time!}
+          />
         </>
       </RideLayout>
     </StripeProvider>

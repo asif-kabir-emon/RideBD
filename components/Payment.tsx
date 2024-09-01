@@ -1,14 +1,14 @@
-import { Alert, Image, Text, View } from "react-native";
-import CustomButton from "./CustomButton";
-import { useStripe } from "@stripe/stripe-react-native";
-import { useState } from "react";
-import { fetchAPI } from "@/lib/fetch";
-import { PaymentProps } from "@/types/type";
-import { useLocationStore } from "@/store";
 import { useAuth } from "@clerk/clerk-expo";
-import ReactNativeModal from "react-native-modal";
-import { images } from "@/constants";
+import { useStripe } from "@stripe/stripe-react-native";
 import { router } from "expo-router";
+import React, { useState } from "react";
+import { Alert, Image, Text, View } from "react-native";
+import { ReactNativeModal } from "react-native-modal";
+import CustomButton from "@/components/CustomButton";
+import { images } from "@/constants";
+import { fetchAPI } from "@/lib/fetch";
+import { useLocationStore } from "@/store";
+import { PaymentProps } from "@/types/type";
 
 const Payment = ({
   fullName,
@@ -18,26 +18,43 @@ const Payment = ({
   rideTime,
 }: PaymentProps) => {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const [success, setSuccess] = useState(false);
-  const { userId } = useAuth();
   const {
     userAddress,
-    userLatitude,
     userLongitude,
-    destinationAddress,
+    userLatitude,
     destinationLatitude,
+    destinationAddress,
     destinationLongitude,
   } = useLocationStore();
 
+  const { userId } = useAuth();
+  const [success, setSuccess] = useState<boolean>(false);
+
+  const openPaymentSheet = async () => {
+    await initializePaymentSheet();
+
+    const { error } = await presentPaymentSheet();
+
+    if (error) {
+      Alert.alert(`Error code: ${error.code}`, error.message);
+    } else {
+      setSuccess(true);
+    }
+  };
+
   const initializePaymentSheet = async () => {
     const { error } = await initPaymentSheet({
-      merchantDisplayName: "Ride BD",
+      merchantDisplayName: "Example, Inc.",
       intentConfiguration: {
         mode: {
-          amount: parseFloat(amount) * 100,
-          currencyCode: "USD",
+          amount: parseInt(amount) * 100,
+          currencyCode: "usd",
         },
-        confirmHandler: async (paymentMethod, _, intentCreationCallback) => {
+        confirmHandler: async (
+          paymentMethod,
+          shouldSavePaymentMethod,
+          intentCreationCallback,
+        ) => {
           const { paymentIntent, customer } = await fetchAPI(
             "/(api)/(stripe)/create",
             {
@@ -63,7 +80,8 @@ const Payment = ({
               body: JSON.stringify({
                 payment_method_id: paymentMethod.id,
                 payment_intent_id: paymentIntent.id,
-                customer_id: customer.id,
+                customer_id: customer,
+                client_secret: paymentIntent.client_secret,
               }),
             });
 
@@ -87,28 +105,19 @@ const Payment = ({
                   user_id: userId,
                 }),
               });
+
               intentCreationCallback({
-                clientSecret: result.clientSecret,
+                clientSecret: result.client_secret,
               });
             }
           }
         },
       },
-      returnURL: 'myapp"//book-ride',
+      returnURL: "myapp://book-ride",
     });
-    if (error) {
+
+    if (!error) {
       console.log(error);
-    }
-  };
-
-  const OpenPaymentSheet = async () => {
-    await initializePaymentSheet();
-    const { error } = await presentPaymentSheet();
-
-    if (error) {
-      Alert.alert(`Error Code: ${error.code}`, error.message);
-    } else {
-      setSuccess(true);
     }
   };
 
@@ -117,21 +126,25 @@ const Payment = ({
       <CustomButton
         title="Confirm Ride"
         className="my-10"
-        onPress={OpenPaymentSheet}
+        onPress={openPaymentSheet}
       />
+
       <ReactNativeModal
         isVisible={success}
         onBackdropPress={() => setSuccess(false)}
       >
-        <View className="flex flex-col justify-center items-center bg-white p-7 rounded-xl">
+        <View className="flex flex-col items-center justify-center bg-white p-7 rounded-2xl">
           <Image source={images.check} className="w-28 h-28 mt-5" />
+
           <Text className="text-2xl text-center font-JakartaBold mt-5">
-            Ride Booked!
+            Booking placed successfully
           </Text>
-          <Text className="text-md text-general-200 font-JakartaMedium text-center mt-5">
-            Thank you for your booking. You reservation has been placed. Please
-            proceed with your trip!
+
+          <Text className="text-md text-general-200 font-JakartaRegular text-center mt-3">
+            Thank you for your booking. Your reservation has been successfully
+            placed. Please proceed with your trip.
           </Text>
+
           <CustomButton
             title="Back Home"
             onPress={() => {
